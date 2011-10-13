@@ -3,7 +3,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 entity speccy2010_top is
-	generic (use_sid : boolean := false);
+	generic (use_sid : boolean := true);
 	port(
 		CLK_20			: in std_logic;
 		CLK_20_ALT		: in std_logic;
@@ -277,7 +277,7 @@ architecture rtl of speccy2010_top is
 	signal weightAY_L	: array_3x24;
 	signal weightAY_R	: array_3x24;
 
-	signal sidEnabled 	: std_logic := '0';
+	signal sidEnabled 	: std_logic := '1';
 	signal covoxEnabled  : std_logic := '0';
 	signal ay1Enabled 	: std_logic := '0';
 	signal ay2Enabled 	: std_logic := '0';
@@ -618,7 +618,7 @@ begin
 
 	U10 : entity work.SounDrive
 		port map(
-			CLK     => clk14m,
+			CLK     => sysclk,
 			
 			I_DA    => covoxDin,
 			
@@ -635,7 +635,7 @@ begin
 	
 	U11_L : entity work.SoundMixer
 		port map (
-			CLK     => clk14m, 
+			CLK     => sysclk, 
 			I_AUDIO1_AY_A => ayOUT_A,
 			I_AUDIO1_AY_B => ayOUT_B,
 			I_AUDIO1_AY_C => ayOUT_C,
@@ -654,11 +654,11 @@ begin
 	 
 			I_AUDIO_AUX_1  => covoxOUT_L1,--COVOX C1
 			I_AUDIO_AUX_2  => covoxOUT_L2,--COVOX C2
-			I_AUDIO_AUX_3  => x"00",--SID
+			I_AUDIO_AUX_3  => sidAdata(17 downto 2),--SID
 
 			WEIGHT_AUDIO_AUX_1 => x"000100",--COVOX C1
 			WEIGHT_AUDIO_AUX_2 => x"000100",--COVOX C2
-			WEIGHT_AUDIO_AUX_3 => x"000100",--SID
+			WEIGHT_AUDIO_AUX_3 => x"000001",--SID -- in data in 16bit format
 			
 			I_AUDIO_BEEPER	=> speaker,
 			I_AUDIO_TAPE	=> tapeIn,
@@ -676,7 +676,7 @@ begin
 
 	U11_R : entity work.SoundMixer
 		port map (
-			CLK     => clk14m, 
+			CLK     => sysclk, 
 			I_AUDIO1_AY_A => ayOUT_A,
 			I_AUDIO1_AY_B => ayOUT_B,
 			I_AUDIO1_AY_C => ayOUT_C,
@@ -695,11 +695,11 @@ begin
 	 
 			I_AUDIO_AUX_1  => covoxOUT_R1,--COVOX C1
 			I_AUDIO_AUX_2  => covoxOUT_R2,--COVOX C2
-			I_AUDIO_AUX_3  => x"00",--SID
+			I_AUDIO_AUX_3  => sidAdata(17 downto 2),--SID
 
 			WEIGHT_AUDIO_AUX_1 => x"000100",--COVOX C1
 			WEIGHT_AUDIO_AUX_2 => x"000100",--COVOX C2
-			WEIGHT_AUDIO_AUX_3 => x"000100",--SID
+			WEIGHT_AUDIO_AUX_3 => x"000001",--SID -- in data in 16bit format
 
 			I_AUDIO_BEEPER	=> speaker,
 			I_AUDIO_TAPE	=> tapeIn,
@@ -1101,15 +1101,11 @@ end generate sid_entity;
 						    if cpuA( 15 downto 12 ) = "0001" and cpuA(1) = '0' then
 						    --if cpuA( 15 downto 0 ) = x"1ffd" then
 									specPort1ffd <= cpuDout;
-						    elsif cpuA( 15 downto 14 ) = "01" and cpuA(5) = '1' and cpuA( 1 downto 0 ) = "01" then
-								if specPort7ffd(5) = '0' then
+						    elsif cpuA( 15 downto 14 ) = "01" and cpuA(5) = '1' and cpuA( 1 downto 0 ) = "01" and specPort7ffd(5) = '0' then
 									specPort7ffd <= cpuDout;
-								end if;
 						    end if;
-						elsif cpuA( 15 ) = '0' and cpuA( 7 downto 0 ) = x"fd" then -- Pentagon to be verified
-							if specMode = 2 or specPort7ffd(5) = '0' then
+						elsif cpuA( 15 ) = '0' and cpuA( 7 downto 0 ) = x"fd" and ( specMode = 2 or specPort7ffd(5) = '0' ) then
 								specPort7ffd <= cpuDout;
-							end if;
 						elsif cpuA = x"eff7" then	
 							specPortEff7 <= cpuDout;
 						elsif cpuA = x"dff7" and specPortEff7(7) = '1' then	
@@ -2027,9 +2023,9 @@ end generate sid_entity;
 	end process;
 
 	------------------------------------------------------------------------------------------------
-	process( clk1m )
+	process( sysclk )
 	begin
-		if clk1m'event and clk1m = '1' then
+		if sysclk'event and sysclk = '1' then
 			if ayymMode = '0' then
 				weightAY_L <= weigthYmTable(to_integer(ayMode),0);
 				weightAY_R <= weigthYmTable(to_integer(ayMode),1);
