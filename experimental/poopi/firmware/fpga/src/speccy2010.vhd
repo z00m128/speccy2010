@@ -3,7 +3,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 entity speccy2010_top is
-	generic (use_sid : boolean := true);
+	generic (use_sid : boolean := false);
 	port(
 		CLK_20			: in std_logic;
 		CLK_20_ALT		: in std_logic;
@@ -211,15 +211,26 @@ architecture rtl of speccy2010_top is
 	
 	signal romPage		: std_logic_vector(2 downto 0);
 	signal ramPage		: std_logic_vector(7 downto 0);
-	signal vramPage		: std_logic_vector(7 downto 0);
-	
+	signal vramPage	: std_logic_vector(7 downto 0);
+	signal vramPage2	: std_logic_vector(7 downto 0);	
+
 	signal attr			: std_logic_vector(15 downto 0);
 	signal shift		: std_logic_vector(15 downto 0);
+
+	signal pix2_0		: std_logic_vector(15 downto 0);
+	signal pix2_1		: std_logic_vector(15 downto 0);
+	signal pix2_2		: std_logic_vector(15 downto 0);
+	signal pix2_3		: std_logic_vector(15 downto 0);
 	
 	signal Paper_r 		: std_logic;
 	signal Blank_r 		: std_logic;
 	signal Attr_r 		: std_logic_vector(7 downto 0);
 	signal Shift_r		: std_logic_vector(7 downto 0);
+
+	signal Pix2_0_r	: std_logic_vector(7 downto 0);
+	signal Pix2_1_r	: std_logic_vector(7 downto 0);
+	signal Pix2_2_r	: std_logic_vector(7 downto 0);
+	signal Pix2_3_r	: std_logic_vector(7 downto 0);
 
 	signal paper		: std_logic;
 	signal hsync		: std_logic;
@@ -228,9 +239,9 @@ architecture rtl of speccy2010_top is
 	
 	signal palSync		: std_logic;
 	
-	signal specR		: std_logic;
-	signal specG		: std_logic;
-	signal specB		: std_logic;
+	signal specR		: std_logic_vector(1 downto 0);
+	signal specG		: std_logic_vector(1 downto 0);
+	signal specB		: std_logic_vector(1 downto 0);
 	signal specY		: std_logic;
 	
 	signal rgbR	 		: std_logic_vector(7 downto 0);
@@ -373,6 +384,8 @@ architecture rtl of speccy2010_top is
 		((x"000055",x"000055",x"000055"),(x"000055",x"000055",x"000055"))
 	);
 	
+	alias vid_mode_16c : std_logic is specPortEff7(0);
+	alias vid_mode_arm : std_logic is armVideoPage(15);
 begin
 
 	U00 : entity work.pll
@@ -1653,8 +1666,9 @@ end generate sid_entity;
 	end process;
 		
 	---------------------------------------------------------------------------------------
+--vid_mode_16c
 
-    paper <= '0' when Hor_Cnt(5) = '0' and Ver_Cnt(5) = '0' and ( Ver_Cnt(4) = '0' or Ver_Cnt(3) = '0' ) else '1';      
+   paper <= '0' when Hor_Cnt(5) = '0' and Ver_Cnt(5) = '0' and ( Ver_Cnt(4) = '0' or Ver_Cnt(3) = '0' ) else '1';      
 	hsync <= '0' when Hor_Cnt(5 downto 2) = "1010" else '1';
 	vsync1 <= '0' when Hor_Cnt(5 downto 1) = "00110" or Hor_Cnt(5 downto 1) = "10100" else '1';
 	vsync2 <= '1' when Hor_Cnt(5 downto 2) = "0010" or Hor_Cnt(5 downto 2) = "1001" else '0';
@@ -1812,10 +1826,12 @@ end generate sid_entity;
 	
 	------------------------------------------------------------------------------------------
 	
-	vramPage <= "000001" & specPort7ffd(3) & "1";
-		
+	vramPage  <= "000001" & specPort7ffd(3) & "1";
+	vramPage2 <= "000001" & specPort7ffd(3) & "0";
+	
 	process( memclk )
-		variable videoPage : std_logic_vector(10 downto 0);
+		variable videoPage  : std_logic_vector(10 downto 0);
+		variable videoPage2 : std_logic_vector(10 downto 0);
 
 		variable portFfTemp : std_logic_vector(7 downto 0) := x"FF";
 		
@@ -1847,54 +1863,114 @@ end generate sid_entity;
 
 				end if;
 				
-				if vidReq = '1' and memReq2 = '0' and ( ( videoMode = x"04" and vidReadPos(0) = '1' ) or cpuCLK_nowait_prev = '1' ) then
+				if vid_mode_16c = '0' or vid_mode_arm = '1' then
+					if vidReq = '1' and memReq2 = '0' and ( ( videoMode = x"04" and vidReadPos(0) = '1' ) or cpuCLK_nowait_prev = '1' ) then
 					
-					memWr2 <= '0';
-					memReq2 <= '1';
+						memWr2 <= '0';
+						memReq2 <= '1';
 					
-					if vidReadPos = 0 or vidReadPos = 2 then
-						memAddress2 <= std_logic_vector(videoPage) & "0" &
-											std_logic_vector( Ver_Cnt(4 downto 3)) & 
-											std_logic_vector(ChrR_Cnt) & 
-											std_logic_vector(Ver_Cnt(2 downto 0)) & 
-											std_logic_vector(Hor_Cnt(4 downto 1) );
-					else
-						memAddress2 <= std_logic_vector(videoPage) & "0110" & 
-											std_logic_vector(Ver_Cnt(4 downto 0) ) & 
-											std_logic_vector(Hor_Cnt(4 downto 1) );
-					end if;					
+						if vidReadPos = 0 or vidReadPos = 2 then
+							memAddress2 <= std_logic_vector(videoPage) & "0" &
+												std_logic_vector( Ver_Cnt(4 downto 3)) & 
+												std_logic_vector(ChrR_Cnt) & 
+												std_logic_vector(Ver_Cnt(2 downto 0)) & 
+												std_logic_vector(Hor_Cnt(4 downto 1) );
+						else
+							memAddress2 <= std_logic_vector(videoPage) & "0110" & 
+												std_logic_vector(Ver_Cnt(4 downto 0) ) & 
+												std_logic_vector(Hor_Cnt(4 downto 1) );
+						end if;					
 
-				elsif memAck2 = '1' then
+					elsif memAck2 = '1' then
 				
-					memReq2 <= '0';
-					vidReq := '0';
+						memReq2 <= '0';
+						vidReq := '0';
 
-					if vidReadPos = 0  then
-						Shift <= memDataOut2;
-						portFfTemp := memDataOut2( 7 downto 0 );						
-						vidReq := '1';
-						
-					elsif vidReadPos = 1  then
-						Attr <= memDataOut2;
-						portFfTemp := memDataOut2( 7 downto 0 );
-						if cpuTurbo = 0 then
+						if vidReadPos = 0  then
+							Shift <= memDataOut2;
+							portFfTemp := memDataOut2( 7 downto 0 );						
 							vidReq := '1';
-						end if;						
 						
-					elsif vidReadPos = 2  then
-						Shift( 15 downto 8 ) <= memDataOut2( 15 downto 8 );
-						portFfTemp := memDataOut2( 15 downto 8 );
-						vidReq := '1';
+						elsif vidReadPos = 1  then
+							Attr <= memDataOut2;
+							portFfTemp := memDataOut2( 7 downto 0 );
+							if cpuTurbo = 0 then
+								vidReq := '1';
+							end if;						
 						
-					else
-						Attr( 15 downto 8 ) <= memDataOut2( 15 downto 8 );
-						portFfTemp := memDataOut2( 15 downto 8 );
+						elsif vidReadPos = 2  then
+							Shift( 15 downto 8 ) <= memDataOut2( 15 downto 8 );
+							portFfTemp := memDataOut2( 15 downto 8 );
+							vidReq := '1';
 						
-					end if;
+						else
+							Attr( 15 downto 8 ) <= memDataOut2( 15 downto 8 );
+							portFfTemp := memDataOut2( 15 downto 8 );
+						
+						end if;
 					
-					vidReadPos := vidReadPos + 1;
+						vidReadPos := vidReadPos + 1;
 				
-				end if;					
+					end if;
+				-- mode 16col
+				else
+					if vidReq = '1' and memReq2 = '0' and ( ( videoMode = x"04" and vidReadPos(0) = '1' ) or cpuCLK_nowait_prev = '1' ) then
+					
+						memWr2 <= '0';
+						memReq2 <= '1';
+
+						case to_integer(vidReadPos(1 downto 0)) is
+							when			0	=> memAddress2 <= std_logic_vector(videoPage) & "0" &
+												std_logic_vector( Ver_Cnt(4 downto 3)) & 
+												std_logic_vector(ChrR_Cnt) & 
+												std_logic_vector(Ver_Cnt(2 downto 0)) & 
+												std_logic_vector(Hor_Cnt(4 downto 1) );
+							when			1	=> memAddress2 <= std_logic_vector(videoPage2) & "0" &
+												std_logic_vector( Ver_Cnt(4 downto 3)) & 
+												std_logic_vector(ChrR_Cnt) & 
+												std_logic_vector(Ver_Cnt(2 downto 0)) & 
+												std_logic_vector(Hor_Cnt(4 downto 1) );
+							when 			2 	=> memAddress2 <= std_logic_vector(videoPage) & "1" &
+												std_logic_vector( Ver_Cnt(4 downto 3)) & 
+												std_logic_vector(ChrR_Cnt) & 
+												std_logic_vector(Ver_Cnt(2 downto 0)) & 
+												std_logic_vector(Hor_Cnt(4 downto 1) );
+							when others 	=> memAddress2 <= std_logic_vector(videoPage2) & "1" &
+												std_logic_vector( Ver_Cnt(4 downto 3)) & 
+												std_logic_vector(ChrR_Cnt) & 
+												std_logic_vector(Ver_Cnt(2 downto 0)) & 
+												std_logic_vector(Hor_Cnt(4 downto 1) );
+						end case;
+			
+					elsif memAck2 = '1' then
+				
+						memReq2 <= '0';
+						vidReq := '0';
+
+						
+						if vidReadPos = 0  then
+							pix2_1 <= memDataOut2;				
+							vidReq := '1';
+						
+						elsif vidReadPos = 1  then
+							pix2_0 <= memDataOut2;
+							vidReq := '1';
+
+						elsif vidReadPos = 2  then
+							pix2_3 <= memDataOut2;						
+							vidReq := '1';
+						
+						elsif vidReadPos = 3  then
+							pix2_2 <= memDataOut2;
+								
+						end if;
+					
+						portFfTemp := x"FF";
+						
+						vidReadPos := vidReadPos + 1;
+				
+					end if;
+				end if;
 					
 			end if;
 		
@@ -1904,10 +1980,12 @@ end generate sid_entity;
 				vidReqUla := '1';
 			end if;			
 			
-			if armVideoPage(15) = '1' then
-				videoPage := armVideoPage( 10 downto 0 );
+			if vid_mode_arm = '1' then
+				videoPage  := armVideoPage( 10 downto 0 );
+				videoPage2 := armVideoPage( 10 downto 0 );
 			else
-				videoPage := "000" & vramPage;
+				videoPage  := "000" & vramPage;
+				videoPage2 := "000" & vramPage2;
 			end if;
 			
 			specPortFf <= portFfTemp;
@@ -1929,22 +2007,43 @@ end generate sid_entity;
 	begin
 	
 		if sysclk'event and sysclk = '1' and clk7m = '1' then
-			if ChrC_Cnt = 7 then
+			if vid_mode_16c = '0' or vid_mode_arm = '1' then
+				if ChrC_Cnt = 7 then
 				
-				if Hor_Cnt(0) = '0' then
-					Attr_r <= Attr( 7 downto 0 );
-					Shift_r <= Shift( 7 downto 0 );
+					if Hor_Cnt(0) = '0' then
+						Attr_r <= Attr( 7 downto 0 );
+						Shift_r <= Shift( 7 downto 0 );
+					else
+						Attr_r <= Attr( 15 downto 8 );
+						Shift_r <= Shift( 15 downto 8 );
+					end if;
+				
+					paper_r <= paper;
+				
 				else
-					Attr_r <= Attr( 15 downto 8 );
-					Shift_r <= Shift( 15 downto 8 );
+					Shift_r <= Shift_r(6 downto 0) & "0";					
 				end if;
-				
-				paper_r <= paper;
-				
+			-- mode 16col
 			else
-				Shift_r <= Shift_r(6 downto 0) & "0";					
-			end if;
+
+				if ChrC_Cnt = 7 then
+				
+					if Hor_Cnt(0) = '0' then
+						Pix2_0_r <= pix2_0( 7 downto 0 );
+						Pix2_1_r <= pix2_1( 7 downto 0 );
+						Pix2_2_r <= pix2_2( 7 downto 0 );
+						Pix2_3_r <= pix2_3( 7 downto 0 );
+					else
+						Pix2_0_r <= pix2_0( 15 downto 8 );
+						Pix2_1_r <= pix2_1( 15 downto 8 );
+						Pix2_2_r <= pix2_2( 15 downto 8 );
+						Pix2_3_r <= pix2_3( 15 downto 8 );
+					end if;
+					paper_r <= paper;
+
+				end if;
 			
+			end if;
 				
 			if ChrC_Cnt = 7 then
 				if videoMode >= 3 then
@@ -1983,39 +2082,64 @@ end generate sid_entity;
 	speaker <= specPortFe( 4 );
 
 	process( sysclk, clk7m )
+	
+	variable pix2 : std_logic_vector (7 downto 0);
 	begin
 		if sysclk'event and sysclk = '1' and clk7m = '1' then
 			if paper_r = '0' then
-				if( Shift_r(7) xor ( Attr_r(7) and Invert(4) ) ) = '1' then
-					specB <= Attr_r(0);
-					specR <= Attr_r(1);
-					specG <= Attr_r(2);
-				else
-					specB <= Attr_r(3);
-					specR <= Attr_r(4);
-					specG <= Attr_r(5);
-				end if;
+				-- fetching data in zx mode
+				if vid_mode_16c = '0' or vid_mode_arm = '1' then
+					if( Shift_r(7) xor ( Attr_r(7) and Invert(4) ) ) = '1' then
+						specB <= Attr_r(0) & Attr_r(0);
+						specR <= Attr_r(1) & Attr_r(1);
+						specG <= Attr_r(2) & Attr_r(2);
+					else
+						specB <= Attr_r(3) & Attr_r(3);
+						specR <= Attr_r(4) & Attr_r(4);
+						specG <= Attr_r(5) & Attr_r(5);
+					end if;
 				
-				specY <= Attr_r(6);
+					specY <= Attr_r(6);
+				-- 16col
+				else
+					case to_integer(ChrC_Cnt(2 downto 1)) is
+						when 			0 	=> pix2:= Pix2_0_r;
+						when 			1 	=> pix2:= Pix2_1_r;
+						when 			2 	=> pix2:= Pix2_2_r;
+						when others		=> pix2:= Pix2_3_r;
+					end case;
+					
+					if ChrC_Cnt(0) = '0' then
+						specY <= pix2(6);
+						specB <= pix2(0) & pix2(0);
+						specR <= pix2(1) & pix2(1);
+						specG <= pix2(2) & pix2(2);
+					else
+						specY <= pix2(7);
+						specB <= pix2(3) & pix2(3);
+						specR <= pix2(4) & pix2(4);
+						specG <= pix2(5) & pix2(5);
+					end if;
+				end if;
 				
 			elsif blank_r = '1' then
 				
 				if armBorder(15) = '1' then
-					specB <= armBorder(0);
-					specR <= armBorder(1);
-					specG <= armBorder(2);
+					specB <= armBorder(0) & armBorder(0);
+					specR <= armBorder(1) & armBorder(1);
+					specG <= armBorder(2) & armBorder(2);
 				else
-					specB <= borderAttr(0);
-					specR <= borderAttr(1);
-					specG <= borderAttr(2);
+					specB <= borderAttr(0) & borderAttr(0);
+					specR <= borderAttr(1) & borderAttr(1);
+					specG <= borderAttr(2) & borderAttr(2);
 				end if;
 				
 				specY <= '0';
 				
 			else
-				specB <= '0';
-				specR <= '0';
-				specG <= '0';
+				specB <= "00";
+				specR <= "00";
+				specG <= "00";
 				specY <= '0';
 
 			end if;
@@ -2241,15 +2365,15 @@ end generate sid_entity;
 				if testVideo = 0 then
 					if specY = '0' then
 				
-						rgbR <= specR & specR & "000000";
-						rgbG <= specG & specG & "000000";
-						rgbB <= specB & specB & "000000";
+						rgbR <= specR & "000000";
+						rgbG <= specG & "000000";
+						rgbB <= specB & "000000";
 					
 					else
 				
-						rgbR <= specR & specR & specR & specR & specR & specR & specR & specR;
-						rgbG <= specG & specG & specG & specG & specG & specG & specG & specG;
-						rgbB <= specB & specB & specB & specB & specB & specB & specB & specB;
+						rgbR <= specR & specR & specR & specR;
+						rgbG <= specG & specG & specG & specG;
+						rgbB <= specB & specB & specB & specB;
 						
 					end if;
 				
