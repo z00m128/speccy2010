@@ -317,6 +317,9 @@ architecture rtl of speccy2010_top is
 	signal cpuReset		: std_logic := '0';
 	signal cpuNMI		: std_logic := '0';
 	
+	signal scorpMagic   : std_logic := '0';
+	signal scorpRom		: std_logic := '0';
+	
 	signal cpuINT		: std_logic;
 	signal cpuM1		: std_logic;
 	signal cpuRFSH		: std_logic;
@@ -754,7 +757,7 @@ end generate sid_entity;
 	
 		if sysclk'event and sysclk = '1' then
 			
-		if counter20_en = '1' and iCLK_20 = "01" then
+			if counter20_en = '1' and iCLK_20 = "01" then
 				if counter20_en_prev = '0' then
 					counter20 <= x"00000000";
 				else
@@ -903,28 +906,28 @@ end generate sid_entity;
 	reset <= not RESET_n;
 
 	specTrdosToggleFlag <= '1' when specTrdosFlag = '0' and cpuM1 = '0' and cpuMREQ = '0' and specPort7ffd(4) = '1' and cpuA( 15 downto 8 ) = "00111101" else
-						   '1' when specTrdosFlag = '1' and cpuM1 = '0' and cpuMREQ = '0' and cpuA( 15 downto 14 ) /= "00" else
+						   '1' when specTrdosFlag = '0' and cpuM1 = '0' and cpuMREQ = '0' and cpuNMI = '1' and scorpROM = '0' else
+						   '1' when specTrdosFlag = '1' and cpuM1 = '0' and cpuMREQ = '0' and cpuNMI = '0' and scorpROM = '0' else
 						   '0';
 
---	romPage <= 	"010" when ( specTrdosFlag xor specTrdosToggleFlag ) = '1' else
---					"001" when specPort7ffd(4) = '1' else
---					"000";
-	romPage <= 	"0" & not ( specTrdosFlag xor specTrdosToggleFlag ) & specPort7ffd(4) when specMode /= 3 else
-					"011" when ( specTrdosFlag xor specTrdosToggleFlag ) = '1' else
-					"010" when specPort1ffd(1) = '1' else
-					"0" & "0" & specPort7ffd(4);
+	romPage <=	"0" & not ( specTrdosFlag xor specTrdosToggleFlag ) & specPort7ffd(4) when specMode /= 3 else
+				"010" when specPort1ffd(1) = '1' else
+				"011" when ( specTrdosFlag xor specTrdosToggleFlag ) = '1' else
+				"00" & specPort7ffd(4);
 
-	ramPage <= 	"00000101" when cpuA( 15 downto 14 ) = "01" else
+	ramPage <= 	"00000000" when cpuA( 15 downto 14 ) = "00" else
+				"00000101" when cpuA( 15 downto 14 ) = "01" else
 				"00000010" when cpuA( 15 downto 14 ) = "10" else
 				"00" & specPort7ffd( 7 downto 5 ) & specPort7ffd( 2 downto 0 ) when specMode = 2 else
-					"0000"  & specPort1ffd(4) & specPort7ffd( 2 downto 0 )            when specMode = 3 else
-				"00000" & specPort7ffd( 2 downto 0 );
-					
+				"0000"  & specPort1ffd(4) & specPort7ffd( 2 downto 0 )         when specMode = 3 else
+				"00000" & specPort7ffd( 2 downto 0 );					
 				
 	ayDin <= cpuDout;
 	covoxDin  <= cpuDout;
 	sidDin    <= cpuDout;
 	sidAddr   <= cpuA(12 downto 8);
+	
+	scorpRom <= '1' when cpuA( 15 downto 14 ) = "00" and ( specMode /= 3 or specPort1ffd(0) = '0' ) else '0';
 	
     process( memclk )
     
@@ -961,7 +964,7 @@ end generate sid_entity;
 				addressReg := x"c000f0";
 				cpuReset <= '0';
 				cpuHaltReq <= '0';
-				cpuNMI	  <= '0';
+				scorpMagic <= '0';
 				specPort1ffd <= x"00";
 				specPort7ffd <= x"00";				
 			end if;		
@@ -1076,7 +1079,7 @@ end generate sid_entity;
 			if iCpuWr = "10" then
 				
 				if cpuMREQ = '0' then			
-					if cpuA( 15 downto 14 ) /= "00" then
+					if scorpRom = '0' then
 						memAddress <= "000" & ramPage & cpuA( 13 downto 1 );		
 						memDataIn <= cpuDout & cpuDout;
 						memDataMask(0) <= not cpuA(0);
@@ -1085,18 +1088,7 @@ end generate sid_entity;
 						cpuReq := '1';
 						memReq <= '1';
 						cpuMemoryWait <= '1';
-
-					elsif specMode = 3 and specPort1ffd(0) = '1' then
-						memAddress     <= "000" & "00000000" & cpuA( 13 downto 1 );
-						memDataIn      <= cpuDout & cpuDout;
-						memDataMask(0) <= not cpuA(0);
-						memDataMask(1) <= cpuA(0);
-						memWr          <= '1';
-						cpuReq         := '1';
-						memReq         <= '1';
-						cpuMemoryWait  <= '1';
-					end if;
-					
+					end if;					
 				elsif cpuIORQ = '0' and cpuM1 = '1' then	
 					if specTrdosFlag = '1' and cpuA( 4 downto 0 ) = "11111" then 											
 						if cpuA( 7 downto 0 ) = x"7F" and trdosFifoWriteCounter > 0 then
@@ -1110,15 +1102,6 @@ end generate sid_entity;
 					else
 						if cpuA( 7 downto 0 ) = x"FE" then
 							specPortFe <= cpuDout;
-						elsif specMode = 3 then -- Scorpion
-						    if cpuA( 15 downto 12 ) = "0001" and cpuA(1) = '0' then
-						    --if cpuA( 15 downto 0 ) = x"1ffd" then
-									specPort1ffd <= cpuDout;
-						    elsif cpuA( 15 downto 14 ) = "01" and cpuA(5) = '1' and cpuA( 1 downto 0 ) = "01" and specPort7ffd(5) = '0' then
-									specPort7ffd <= cpuDout;
-						    end if;
-						elsif cpuA( 15 ) = '0' and cpuA( 7 downto 0 ) = x"fd" and ( specMode = 2 or specPort7ffd(5) = '0' ) then
-								specPort7ffd <= cpuDout;
 						elsif cpuA = x"eff7" then	
 							specPortEff7 <= cpuDout;
 						elsif cpuA = x"dff7" and specPortEff7(7) = '1' then	
@@ -1141,6 +1124,15 @@ end generate sid_entity;
 									ayWR <= '1';
 								end if;	
 							end if;
+						elsif specMode = 3 then -- Scorpion
+						    if cpuA( 15 downto 12 ) = "0001" and cpuA(1) = '0' then
+						    --if cpuA( 15 downto 0 ) = x"1ffd" then
+									specPort1ffd <= cpuDout;
+						    elsif cpuA( 15 downto 14 ) = "01" and cpuA(5) = '1' and cpuA( 1 downto 0 ) = "01" and specPort7ffd(5) = '0' then
+									specPort7ffd <= cpuDout;
+						    end if;
+						elsif cpuA( 15 ) = '0' and cpuA( 7 downto 0 ) = x"fd" and ( specMode = 2 or specPort7ffd(5) = '0' ) then
+								specPort7ffd <= cpuDout;
 						end if;
 														
 						if(cpuA(15) ='1' or cpuA(14) = '1') then
@@ -1163,12 +1155,8 @@ end generate sid_entity;
 				
 				if cpuMREQ = '0' then
 					
-					if cpuA( 15 downto 14 ) = "00" then
-						if specMode = 3 and specPort1ffd(0) = '1' then
-							memAddress <= "000" & "00000000"        & cpuA( 13 downto 1 );
-						else
+					if scorpRom = '1' then
 						memAddress <= "001" & "00000" & romPage & cpuA( 13 downto 1 );
-						end if;
 					else
 						memAddress <= "000" & ramPage & cpuA( 13 downto 1 );
 					end if;						
@@ -1279,7 +1267,7 @@ end generate sid_entity;
 							cpuRestorePC_n <= not ARM_AD( 1 );
 							cpuOneCycleWaitReq <= ARM_AD( 2 );
 							cpuReset <= ARM_AD( 3 );
-							cpuNMI   <= ARM_AD( 4 );
+							scorpMagic <= ARM_AD( 4 );
 							
 						elsif addressReg( 7 downto 0 ) = x"01" then
 							cpuRestorePC <= ARM_AD;
@@ -1737,6 +1725,14 @@ end generate sid_entity;
 			end if;
 			
 			if cpuCLK = '1' then
+			
+				if cpuMREQ = '0' and cpuM1 = '0' then
+					if scorpROM = '0' then
+						cpuNMI <= scorpMagic;
+					elsif scorpROM = '1' then
+						cpuNMI <= '0';
+					end if;
+				end if;
 				
 				if ( cpuIORQ = '0' and cpuA( 15 downto 14 ) /= "01" ) or cpuMREQ = '0' then
 					ulaWaitCancel <= '1';
