@@ -9,8 +9,8 @@
 #include "types.h"
 
 #define VER_MAJOR 1
-#define VER_MINIR 0
-#define REV 51
+#define VER_MINIR 1
+#include "revision.h"
 
 #ifdef __cplusplus
 extern "C"

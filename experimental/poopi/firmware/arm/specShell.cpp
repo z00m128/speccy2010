@@ -659,7 +659,7 @@ void InitScreen()
     SystemBus_Write( 0xc00022, 0x8000 | ( ( attr >> 3 ) & 0x03 ) );     // Enable shell border
 
     char str[33];
-    sniprintf( str, sizeof(str), "-= Speccy2010, v%d.%.2d, r%.4d.4 =-\n", VER_MAJOR, VER_MINIR, REV );
+    sniprintf( str, sizeof(str), "-= Speccy2010, v%d.%.2d,r%2d Exp =-\n", VER_MAJOR, VER_MINIR, REV );
 
     WriteStr( 0, 0, str );
     WriteAttr( 0, 0, 0x44, strlen( str ) );
