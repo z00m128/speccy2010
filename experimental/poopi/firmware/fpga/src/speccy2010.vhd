@@ -915,7 +915,7 @@ end generate sid_entity;
 				"011" when ( specTrdosFlag xor specTrdosToggleFlag ) = '1' else
 				"00" & specPort7ffd(4);
 
-	ramPage <= 	"00000000" when cpuA( 15 downto 14 ) = "00" else
+	ramPage <= 	"00001000" when cpuA( 15 downto 14 ) = "00" else
 				"00000101" when cpuA( 15 downto 14 ) = "01" else
 				"00000010" when cpuA( 15 downto 14 ) = "10" else
 				"00" & specPort7ffd( 7 downto 5 ) & specPort7ffd( 2 downto 0 ) when specMode = 2 else
