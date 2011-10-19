@@ -1090,7 +1090,7 @@ end generate sid_entity;
 						cpuMemoryWait <= '1';
 					end if;					
 				elsif cpuIORQ = '0' and cpuM1 = '1' then	
-					if specTrdosFlag = '1' and cpuA( 4 downto 0 ) = "11111" then 											
+					if ( specTrdosFlag = '1' or specMode = 3 ) and cpuA( 4 downto 0 ) = "11111" then 											
 						if cpuA( 7 downto 0 ) = x"7F" and trdosFifoWriteCounter > 0 then
 							trdosFifoWriteWrTmp <= cpuDout;
 							trdosFifoWriteWr <= '1';							
@@ -1193,7 +1193,7 @@ end generate sid_entity;
 						--cpuDin <= rtcRam( to_integer( unsigned( specPortDff7( 5 downto 0 ) ) ) );
 						cpuDin <= rtcRamDataRd;
 						
-					elsif specTrdosFlag = '1' and cpuA( 4 downto 0 ) = "11111" then
+					elsif ( specTrdosFlag = '1' or specMode = 3 ) and cpuA( 4 downto 0 ) = "11111" then
 						
 						if cpuA( 7 downto 0 ) = x"FF" then 
 						
