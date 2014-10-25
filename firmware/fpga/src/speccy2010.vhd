@@ -1569,7 +1569,7 @@ begin
 		
 	end process;
 		
-    paper <= '0' when Hor_Cnt(5) = '0' and Ver_Cnt(5) = '0' and ( Ver_Cnt(4) = '0' or Ver_Cnt(3) = '0' ) else '1';      
+   paper <= '0' when Hor_Cnt(5) = '0' and Ver_Cnt(5) = '0' and ( Ver_Cnt(4) = '0' or Ver_Cnt(3) = '0' ) else '1';      
 	hsync <= '0' when Hor_Cnt(5 downto 2) = "1010" else '1';
 	vsync1 <= '0' when Hor_Cnt(5 downto 1) = "00110" or Hor_Cnt(5 downto 1) = "10100" else '1';
 	vsync2 <= '1' when Hor_Cnt(5 downto 2) = "0010" or Hor_Cnt(5 downto 2) = "1001" else '0';
@@ -2091,9 +2091,15 @@ begin
 	begin
 		if sysclk'event and sysclk = '1' and clk14m = '1' then
 		
-			vgaR <= temp( 23 downto 16 );
-			vgaG <= temp( 15 downto 8 );
-			vgaB <= temp( 7 downto 0 );
+			if vgaVCounter( 0 ) = '0' then
+				vgaR <= temp( 23 downto 16 );
+				vgaG <= temp( 15 downto 8 );
+				vgaB <= temp( 7 downto 0 );
+			else
+				vgaR <= std_logic_vector( "0" & unsigned( temp( 23 downto 17 ) ) + unsigned( temp( 23 downto 18 ) ) );
+				vgaG <= std_logic_vector( "0" & unsigned( temp( 15 downto 9 ) ) + unsigned( temp( 15 downto 10 ) ) );
+				vgaB <= std_logic_vector( "0" & unsigned( temp( 7 downto 1 ) ) + unsigned( temp( 7 downto 2 ) ) );
+			end if;
 			
 			------------------------------------------------------------------------------
 			

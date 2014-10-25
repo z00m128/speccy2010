@@ -537,6 +537,7 @@ void FPGA_Config()
     GPIO_WriteBit( GPIO1, GPIO_Pin_13, Bit_SET );     // FPGA RESET HIGH
     DelayMs( 10 );
 
+    romConfigPrev = -1;
     SystemBus_TestConfiguration();
 
     if( fpgaStatus == FPGA_SPECCY2010 )
@@ -561,7 +562,6 @@ void FPGA_Config()
         __TRACE( "Wrong FPGA configuration...\n" );
     }
 
-    romConfigPrev = -1;
     WDT_Kick();
 
     timer_flag_1Hz = 0;

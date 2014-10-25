@@ -136,6 +136,7 @@ package T80_Pack is
 		F				: in std_logic_vector(7 downto 0);
 		NMICycle		: in std_logic;
 		IntCycle		: in std_logic;
+		XY_State		: in  std_logic_vector(1 downto 0);
 		MCycles			: out std_logic_vector(2 downto 0);
 		TStates			: out std_logic_vector(2 downto 0);
 		Prefix			: out std_logic_vector(1 downto 0); -- None,BC,ED,DD/FD
@@ -182,7 +183,8 @@ package T80_Pack is
 		IMode			: out std_logic_vector(1 downto 0);
 		Halt			: out std_logic;
 		NoRead			: out std_logic;
-		Write			: out std_logic
+		Write			: out std_logic;
+		XYbit_undoc		: out std_logic
 	);
 	end component;
 
