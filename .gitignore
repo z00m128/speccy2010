@@ -4,6 +4,8 @@
 /sources/fpga/speccy2010.rbf
 /sources/fpga/speccy2010.sof
 /sources/fpga/speccy2010.ttf
+/sources/arm/.objs/
+/sources/arm/build/
 *.bak
 *.qws
 *.rpt
