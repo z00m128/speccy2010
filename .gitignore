@@ -1,5 +1,9 @@
-/firmware/fpga/db/
-/firmware/fpga/incremental_db/
+/sources/fpga/db/
+/sources/fpga/incremental_db/
+/sources/fpga/speccy2010.jdi
+/sources/fpga/speccy2010.rbf
+/sources/fpga/speccy2010.sof
+/sources/fpga/speccy2010.ttf
 *.bak
 *.qws
 *.rpt
