@@ -1,11 +1,11 @@
 #ifndef STRING_H_INCLUDED
 #define STRING_H_INCLUDED
 
+#include "types.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-
-#include "types.h"
 
 const int CSTRING_DEF_MIN_SIZE = 0x10;
 
@@ -260,6 +260,4 @@ inline int CString::SetBufferSize( int _size )
     return size;
 }
 
-
 #endif
-

@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "string.h"
+#include "cstring.h"
 
 CString::CString( int _size )
 {
