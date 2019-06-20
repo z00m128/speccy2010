@@ -1,0 +1,58 @@
+Main control keys:
+------------------
+PrintScreen - reset;
+Arrows, LCtrl - kempston joystick;
+'+' or '=' - play tape;
+'-' - stop tape or resume playback;
+PgUp, PgDn, Home, End - cursor joystick;
+ESC - hex editor;
+F1 - turbo off;
+F2 - turbo 2x;
+F3 - turbo 4x;
+F4 - turbo 8x (unstable);
+F5 - delay 1 tact;
+F6 - clear attributes;
+F9 - settings;
+F10 - disk menu;
+F11 - save SNA;
+Shift+F11 - save SNA as ...;
+F12 - file manager;
+Alt+(0..9) - save SNA with fixed name;
+Ctrl+1 - PAL Composite/S-Video;
+Ctrl+2 - PAL RGB;
+Ctrl+3 - VGA 50Hz;
+Ctrl+4 - VGA 60Hz;
+Ctrl+5 - VGA 75Hz;
+Pause - hold;
+Ins - swap mouse buttons;
+
+File manager keys:
+------------------
+Arrows - move cursor;
+Enter - run disk image / enter directory;
+Backspace - leave directory;
+Space - select files;
+'+' - select all files;
+'-' - unselect all selected files;
+'\' - invert selection;
+1,2,3,4 - mount selected image to drive A,B,C,D;
+F1 - show this help;
+F2 - select destination directory;
+F3 - view file;
+F4 - create empty TRD disk image;
+F5 - copy file(s) to destination directory;
+Shift+F5 - copy file;
+F6 - move file(s) to destination directory;
+Shift+F6 - rename file;
+F7 - create directory;
+F8 - delete file(s);
+F9 - format selected TRD disk image;
+CapsLock - upper case;
+LCtrl/LShift - eng/rus keyboard layout;
+
+Hex editor keys:
+----------------
+Arrows - move cursor;
+0..9, A..F - enter values;
+M - set address;
+Z - execute current Z80 instruction;

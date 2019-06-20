@@ -264,6 +264,7 @@
 		<Unit filename="ps2scancodes.h" />
 		<Unit filename="ramFile.cpp" />
 		<Unit filename="ramFile.h" />
+		<Unit filename="revision.h" />
 		<Unit filename="settings.cpp" />
 		<Unit filename="settings.h" />
 		<Unit filename="specBetadisk.cpp" />
