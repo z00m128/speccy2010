@@ -1,0 +1,9 @@
+/firmware/fpga/db/
+/firmware/fpga/incremental_db/
+*.bak
+*.qws
+*.rpt
+*.done
+*.summary
+*.pin
+*.smsg
