@@ -6,6 +6,7 @@
 /sources/fpga/speccy2010.ttf
 /sources/arm/.objs/
 /sources/arm/build/
+/sources/armProg/str750prog.exe
 *.bak
 *.qws
 *.rpt
